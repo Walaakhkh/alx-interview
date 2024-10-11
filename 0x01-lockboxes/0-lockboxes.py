@@ -19,10 +19,10 @@ def canUnlockAll(boxes):
     # List to keep track of unlocked boxes, initially only box 0 is unlocked
     unlocked = [False] * len(boxes)
     unlocked[0] = True
-    
+
     # Stack to manage the keys we find, starting with the keys in box 0
     keys = [0]
-    
+
     # While there are keys to process
     while keys:
         current_key = keys.pop()  # Take a key from the stack
@@ -31,6 +31,6 @@ def canUnlockAll(boxes):
             if key < len(boxes) and not unlocked[key]:
                 unlocked[key] = True  # Mark the box as unlocked
                 keys.append(key)      # Add the new key to the stack
-    
+
     # Check if all boxes have been unlocked
     return all(unlocked)
