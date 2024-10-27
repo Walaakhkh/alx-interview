@@ -1,4 +1,13 @@
 #!/usr/bin/python3
+"""
+Log Parsing Module
+
+This script reads lines from standard input representing logs with a specific format
+and computes metrics on the fly. Every 10 lines and upon receiving a keyboard
+interrupt (CTRL + C), it prints the cumulative file size and a count of specific
+HTTP status codes in ascending order.
+"""
+
 import sys
 import signal
 
@@ -15,7 +24,12 @@ def print_stats():
             print("{}: {}".format(code, status_codes_count[code]))
 
 def handle_exit(signal, frame):
-    """Handles keyboard interrupt to print stats before exiting."""
+    """
+    Signal handler for keyboard interrupt (CTRL + C).
+
+    When a keyboard interrupt is received, this function prints the current
+    statistics and exits the program.
+    """
     print_stats()
     sys.exit(0)
 
@@ -27,16 +41,17 @@ try:
         line_count += 1
 
         try:
+            # Split line into components and parse status code and file size
             parts = line.split()
             status_code = int(parts[-2])
             file_size = int(parts[-1])
 
-            # Update total file size and status code count
+            # Update total file size and count of status codes
             total_size += file_size
             if status_code in status_codes_count:
                 status_codes_count[status_code] += 1
         except (IndexError, ValueError):
-            # Skip lines that don't match the expected format
+            # Skip lines that don’t match the expected format
             continue
 
         # Print stats every 10 lines
