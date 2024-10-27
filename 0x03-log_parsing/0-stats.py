@@ -53,7 +53,6 @@ try:
                     status_code_counts[status_code] += 1
 
             except ValueError:
-                # Skip line if there's an error in converting file size or status code
                 continue
 
         # Print stats every 10 lines
