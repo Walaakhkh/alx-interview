@@ -1,79 +1,68 @@
 #!/usr/bin/python3
 """
-Log Parsing Module
+Log Parsing Script
 
-This script reads lines from standard input representing logs with a specific
-format and computes metrics on the fly. Every 10 lines and upon receiving a
-keyboard interrupt (CTRL + C), it prints the cumulative file size and a count
-of specific HTTP status codes in ascending order.
+This script reads logs from standard input line by line in a specific format.
+It computes metrics every 10 lines and upon receiving a keyboard interruption (CTRL + C).
 """
 
 import sys
 import signal
 
-# Initialize variables
-total_size = 0
-status_codes_count = {
-        200: 0, 301: 0, 400: 0, 401: 0, 403: 0, 404: 0, 405: 0, 500: 0
-        }
+# Initialize global counters
+total_file_size = 0
+status_code_counts = {200: 0, 301: 0, 400: 0, 401: 0, 403: 0, 404: 0, 405: 0, 500: 0}
 line_count = 0
 
 
 def print_stats():
-    """Prints the total file size and counts for each status code in ascending
-    order."""
-    print("File size:", total_size)
-    for code in sorted(status_codes_count.keys()):
-        if status_codes_count[code] > 0:
-            print("{}: {}".format(code, status_codes_count[code]))
+    """Prints the accumulated file size and status code counts."""
+    print("File size:", total_file_size)
+    for code in sorted(status_code_counts.keys()):
+        if status_code_counts[code] > 0:
+            print("{}: {}".format(code, status_code_counts[code]))
 
 
-def handle_exit(signal, frame):
-    """
-    Signal handler for keyboard interrupt (CTRL + C).
-
-    When a keyboard interrupt is received, this function prints the current
-    statistics and exits the program.
-    """
+def handle_interrupt(sig, frame):
+    """Handles keyboard interruption and prints final stats."""
     print_stats()
     sys.exit(0)
 
 
-# Set up signal handler for graceful exit on keyboard interrupt (CTRL+C)
-signal.signal(signal.SIGINT, handle_exit)
+# Register the keyboard interrupt handler
+signal.signal(signal.SIGINT, handle_interrupt)
 
 try:
     for line in sys.stdin:
         line_count += 1
+        parts = line.strip().split()
 
-        # Strip and validate line format
-        line = line.strip()
-        if not line:
-            continue
+        # Validate and parse line
+        if len(parts) >= 7 and parts[-2].isdigit() and parts[-1].isdigit():
+            try:
+                status_code = int(parts[-2])
+                file_size = int(parts[-1])
 
-        try:
-            # Split line into components and parse status code and file size
-            parts = line.split()
-            status_code = int(parts[-2])
-            file_size = int(parts[-1])
+                # Update total file size
+                total_file_size += file_size
 
-            # Update total file size and count of status codes
-            total_size += file_size
-            if status_code in status_codes_count:
-                status_codes_count[status_code] += 1
-        except (IndexError, ValueError):
-            # Skip lines that don’t match the expected format
-            continue
+                # Update status code counts if it's a known code
+                if status_code in status_code_counts:
+                    status_code_counts[status_code] += 1
+
+            except ValueError:
+                # Skip line if there's an error in converting file size or status code
+                continue
 
         # Print stats every 10 lines
         if line_count % 10 == 0:
             print_stats()
 
-    # After loop ends, print final stats if any lines were processed
-    if line_count % 10 != 0 and line_count > 0:
+    # Print final stats if not interrupted after the last set of 10 lines
+    if line_count % 10 != 0:
         print_stats()
 
 except KeyboardInterrupt:
-    # Handle keyboard interrupt gracefully
+    # Handle any unhandled KeyboardInterrupts gracefully
     print_stats()
     raise
